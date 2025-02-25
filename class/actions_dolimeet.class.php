@@ -512,6 +512,9 @@ class ActionsDolimeet
             global $object;
 
             if (isset($object->array_options['options_trainingsession_type']) && !empty($object->array_options['options_trainingsession_type'])) {
+                // Load Dolibarr libraries
+                require_once DOL_DOCUMENT_ROOT . '/comm/action/class/actioncomm.class.php';
+
                 // Load Saturne libraries
                 require_once __DIR__ . '/../../saturne/class/saturnesignature.class.php';
                 require_once __DIR__ . '/../../saturne/lib/saturne_functions.lib.php';
@@ -521,65 +524,88 @@ class ActionsDolimeet
 
                 saturne_load_langs();
 
-                $survey    = new Survey($this->db);
-                $signatory = new SaturneSignature($db, 'digiquali', $survey->element);
+                $survey     = new Survey($this->db);
+                $signatory  = new SaturneSignature($db, 'digiquali', $survey->element);
+                $actionComm = new ActionComm($db);
 
                 $contacts           = array_merge($object->liste_contact(-1, 'internal'), $object->liste_contact(-1));
                 $contactsCodeWanted = ['BILLING', 'TRAINEE', 'SESSIONTRAINER', 'OPCO'];
 
                 $object->fetchObjectLinked(null, '', null, '', 'OR', 1, 'sourcetype', 0);
 
+                $actionComms = $actionComm->getActions(0, $object->id, 'contract', " AND code = 'AC_CONTRACT_CONTACT_SEND_MAIL_SATISFACTION_SURVEY'");
+
                 if (!empty($contacts)) {
                     $outputLine = [];
                     foreach ($contacts as $contact) {
                         $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
-                        if (in_array($contact['code'], $contactsCodeWanted)) {
-                            if (isset($object->linkedObjectsIds['digiquali_survey']) && !empty($object->linkedObjectsIds['digiquali_survey'])) {
-                                $surveyIDs = $object->linkedObjectsIds['digiquali_survey'];
-                                arsort($surveyIDs);
-                                foreach ($surveyIDs as $surveyID) {
-                                    $confName = 'DOLIMEET_' . $contact['code'] . '_SATISFACTION_SURVEY_SHEET';
-                                    $filter   = ' AND e.fk_sheet = ' . $conf->global->$confName;
-                                    if (getDolGlobalInt($confName) > 0) {
-                                        if ($signatory->checkSignatoryHasObject($surveyID, $survey->table_element, $contact['id'], $contact['source'] == 'internal' ? 'user' : 'socpeople', $filter)) {
-                                            $survey->fetch($surveyID);
-                                            $signatory->fetch($signatory->id);
-                                            $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
-                                            $outputLine[$contact['rowid']] .= $survey->getNomUrl(1) . ' - ' .  $signatory->getLibStatut(3);
-                                            $outputLine[$contact['rowid']] .= '</td>';
-                                            break;
-                                        } else {
-                                            $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
-                                            $outputLine[$contact['rowid']] .= img_picto($langs->trans('Survey'), $survey->picto, 'class="pictofixedwidth"');
-                                            $outputLine[$contact['rowid']] .= '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=set_satisfaction_survey&contact_code=' . $contact['code'] . '&contact_id=' . $contact['id'] . '&contact_source=' . $contact['source'] . '&token=' . newToken() . '">';
-                                            $outputLine[$contact['rowid']] .= img_picto($langs->trans('SetSatisfactionSurvey'), 'fontawesome_fa-plus-circle_fas_#444') . '</a>';
-                                            $outputLine[$contact['rowid']] .= '</td>';
+                        if (!in_array($contact['code'], $contactsCodeWanted)) {
+                            continue;
+                        }
+                        if (isset($object->linkedObjectsIds['digiquali_survey']) && !empty($object->linkedObjectsIds['digiquali_survey'])) {
+                            $surveyIDs = $object->linkedObjectsIds['digiquali_survey'];
+                            arsort($surveyIDs);
+                            foreach ($surveyIDs as $surveyID) {
+                                $confName = 'DOLIMEET_' . $contact['code'] . '_SATISFACTION_SURVEY_SHEET';
+                                $filter   = ' AND e.fk_sheet = ' . $conf->global->$confName;
+                                if (getDolGlobalInt($confName) > 0) {
+                                    if ($signatory->checkSignatoryHasObject($surveyID, $survey->table_element, $contact['id'], $contact['source'] == 'internal' ? 'user' : 'socpeople', $filter)) {
+                                        $survey->fetch($surveyID);
+                                        $signatory->fetch($signatory->id);
+                                        $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
+                                        $outputLine[$contact['rowid']] .= $survey->getNomUrl(1) . ' - ' .  $signatory->getLibStatut(3);
+                                        if ($survey->status == Survey::STATUS_DRAFT && !empty($contact['email'])) {
+                                            $emailNb = 0;
+                                            foreach ($actionComms as $actionComm) {
+                                                if (!empty($actionComm->socpeopleassigned[$contact['id']])) {
+                                                    $emailNb++;
+                                                }
+                                            }
+
+                                            $outputLine[$contact['rowid']] .= '<a class="marginleftonly" href="' . $_SERVER['PHP_SELF'] .'?id=' . $object->id . '&action=send_survey_mail&contact_code=' . $contact['code'] . '&contact_id=' . $contact['id'] . '&contact_source=' . $contact['source'] . '&survey_id=' . $survey->id . '&token=' . newToken() . '" title="' . $langs->transnoentities('SendMail') . '"><i class="fas fa-paper-plane"></i></a>';
+                                            $outputLine[$contact['rowid']] .= '<span class="marginleftonly badge badge-info">' . $emailNb . '</span>';
                                         }
+                                        $outputLine[$contact['rowid']] .= '</td>';
+                                        break;
                                     } else {
                                         $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
-                                        $outputLine[$contact['rowid']] .= '<a href="' . dol_buildpath('/custom/dolimeet/admin/setup.php', 1) . '">';
-                                        $outputLine[$contact['rowid']] .= $form->textwithpicto($langs->trans('ClickHere'), $langs->trans('NeedToSetSatisfactionSurvey', dol_strtolower($langs->trans(ucfirst(dol_strtolower($contact['code']))))), 1, 'warning') . '</a>';
+                                        $outputLine[$contact['rowid']] .= img_picto($langs->trans('Survey'), $survey->picto, 'class="pictofixedwidth"');
+                                        $outputLine[$contact['rowid']] .= '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=set_satisfaction_survey&contact_code=' . $contact['code'] . '&contact_id=' . $contact['id'] . '&contact_source=' . $contact['source'] . '&token=' . newToken() . '">';
+                                        $outputLine[$contact['rowid']] .= img_picto($langs->trans('SetSatisfactionSurvey'), 'fontawesome_fa-plus-circle_fas_#444') . '</a>';
                                         $outputLine[$contact['rowid']] .= '</td>';
                                     }
+                                } else {
+                                    $outputLine[$contact['rowid']]  = '<td class="tdoverflowmax200">';
+                                    $outputLine[$contact['rowid']] .= '<a href="' . dol_buildpath('/custom/dolimeet/admin/setup.php', 1) . '">';
+                                    $outputLine[$contact['rowid']] .= $form->textwithpicto($langs->trans('ClickHere'), $langs->trans('NeedToSetSatisfactionSurvey', dol_strtolower($langs->trans(ucfirst(dol_strtolower($contact['code']))))), 1, 'warning') . '</a>';
+                                    $outputLine[$contact['rowid']] .= '</td>';
                                 }
-                            } else {
-                                $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
-                                $outputLine[$contact['rowid']] .= img_picto($langs->trans('Survey'), $survey->picto, 'class="pictofixedwidth"');
-                                $outputLine[$contact['rowid']] .= '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=set_satisfaction_survey&contact_code=' . $contact['code'] . '&contact_id=' . $contact['id'] . '&contact_source=' . $contact['source'] . '&token=' . newToken() . '">';
-                                $outputLine[$contact['rowid']] .= img_picto($langs->trans('SetSatisfactionSurvey'), 'fontawesome_fa-plus-circle_fas_#444') . '</a>';
-                                $outputLine[$contact['rowid']] .= '</td>';
                             }
+                        } else {
+                            $outputLine[$contact['rowid']] = '<td class="tdoverflowmax200">';
+                            $outputLine[$contact['rowid']] .= img_picto($langs->trans('Survey'), $survey->picto, 'class="pictofixedwidth"');
+                            $outputLine[$contact['rowid']] .= '<a class="reposition editfielda" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=set_satisfaction_survey&contact_code=' . $contact['code'] . '&contact_id=' . $contact['id'] . '&contact_source=' . $contact['source'] . '&token=' . newToken() . '">';
+                            $outputLine[$contact['rowid']] .= img_picto($langs->trans('SetSatisfactionSurvey'), 'fontawesome_fa-plus-circle_fas_#444') . '</a>';
+                            $outputLine[$contact['rowid']] .= '</td>';
                         }
                         $outputLine[$contact['rowid']] .= '</td>';
                     }
 
                     $outputLineHeader = '<th class="wrapcolumntitle liste_titre" title="' . $langs->transnoentities('SatisfactionSurvey') . '">' . $langs->transnoentities('SatisfactionSurvey') . '</th>';
 
+                    $massActionButton = '<div class="right marginbottomonly">';
+                    $massActionButton .= '<a class="butAction" href="' . $_SERVER['PHP_SELF'] . '?id=' . $object->id . '&action=mass_send_survey_mail&token=' . newToken() . '">';
+                    $massActionButton .= '<i class="fas fa-paper-plane"></i> ' . $langs->transnoentities('SendGlobalSatisfactionSurveyMail') . '</a>';
+                    $massActionButton .= '</div>';
+
                     $jsonData = json_encode($outputLine);
                     ?>
                     <script>
                         // Target the second-to-last th element
-                        var targetTh = $('table.tagtable th:nth-last-child(2)');
+                        var table    = $('table.tagtable');
+                        var targetTh = table.find('th:nth-last-child(2)');
+
+                        table.before(<?php echo json_encode($massActionButton); ?>)
                         targetTh.before(<?php echo json_encode($outputLineHeader); ?>)
 
                         function fillTable(data) {
@@ -816,15 +842,55 @@ class ActionsDolimeet
         }
 
         if (strpos($parameters['context'], 'contractcontactcard') !== false) {
-            if ($action == 'set_satisfaction_survey' && isModEnabled('digiquali') && version_compare(getDolGlobalString('DIGIQUALI_VERSION'), '1.11.0', '>=')) {
-                require_once __DIR__ . '/../lib/dolimeet_function.lib.php';
+            require_once __DIR__ . '/../lib/dolimeet_function.lib.php';
 
+            if ($action == 'set_satisfaction_survey' && isModEnabled('digiquali') && version_compare(getDolGlobalString('DIGIQUALI_VERSION'), '1.11.0', '>=')) {
                 $object->fetch(GETPOST('id'));
 
                 set_satisfaction_survey($object, GETPOST('contact_code'), GETPOST('contact_id'), GETPOST('contact_source'));
 
                 header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $object->id);
                 exit;
+            }
+            if ($action == 'send_survey_mail') {
+                $object->fetch(GETPOST('id'));
+
+                send_survey_mail($object, GETPOST('contact_id'), GETPOST('contact_source'), GETPOST('contact_code'), GETPOST('survey_id'));
+
+                header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $object->id);
+                exit;
+            }
+            if ($action == 'mass_send_survey_mail') {
+                require_once __DIR__ . '/../../digiquali/class/survey.class.php';
+                require_once __DIR__ . '/../../saturne/class/saturnesignature.class.php';
+
+                $survey             = new Survey($this->db);
+                $signatory          = new SaturneSignature($this->db, 'digiquali', $survey->element);
+                $contactsCodeWanted = ['BILLING', 'TRAINEE', 'SESSIONTRAINER', 'OPCO'];
+
+                $object->fetch(GETPOST('id'));
+
+                $contacts = array_merge($object->liste_contact(-1, 'internal'), $object->liste_contact(-1));
+
+                $object->fetchObjectLinked(null, '', null, '', 'OR', 1, 'sourcetype', 0);
+
+                foreach ($contacts as $contact) {
+                    if (!in_array($contact['code'], $contactsCodeWanted)) {
+                        continue;
+                    }
+                    $confName = 'DOLIMEET_' . $contact['code'] . '_SATISFACTION_SURVEY_SHEET';
+                    $filter   = ' AND e.fk_sheet = ' . $conf->global->$confName;
+                    foreach ($object->linkedObjectsIds['digiquali_survey'] as $surveyID) {
+                        if ($signatory->checkSignatoryHasObject($surveyID, $survey->table_element, $contact['id'], $contact['source'] == 'internal' ? 'user' : 'socpeople', $filter)) {
+                            $survey->fetch($surveyID);
+                            if ($survey->status == Survey::STATUS_DRAFT && $contact['email']) {
+                                send_survey_mail($object, $contact['id'], $contact['source'], $contact['code'], $surveyID);
+                            }
+                        }
+                    }
+                }
+
+                header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $object->id);
             }
         }
 
@@ -1427,4 +1493,26 @@ class ActionsDolimeet
 
         return 0; // or return 1 to replace standard code.
     }
+
+    /**
+     * Overloading the emailElementlist function : replacing the parent's function with the one below
+     *
+     * @param  array $parameters Hook metadatas (context, etc...)
+     * @return int               0 < on error, 0 on success, 1 to replace standard code
+     */
+    public function emailElementlist(array $parameters): int
+    {
+        global $user, $langs;
+        if (strpos($parameters['context'], 'emailtemplates') !== false) {
+            if (isModEnabled('dolimeet') && $user->hasRight('dolimeet', 'adminpage', 'read')) {
+                $pictopath = dol_buildpath('custom/dolimeet/img/dolimeet_color.png', 1);
+                $picto     = img_picto('', $pictopath, '', 1, 0, 0, '', 'pictoModule');
+
+                $this->results = ['survey@dolimeet' => $picto . dol_escape_htmltag($langs->trans('DoliMeet'))];
+            }
+        }
+
+        return 0; // or return 1 to replace standard code
+    }
+
 }

@@ -146,7 +146,8 @@ class modDoliMeet extends DolibarrModules
                 'contractlist',
                 'propalcard',
                 'productcard',
-                'productservicelist'
+                'productservicelist',
+                'emailtemplates'
             ],
             // Set this to 1 if features of module are opened to external users.
             'moduleforexternal' => 1,
@@ -596,12 +597,14 @@ class modDoliMeet extends DolibarrModules
         // Load Saturne libraries
         require_once __DIR__ . '/../../../saturne/class/saturnemail.class.php';
 
-        $saturneMail = new SaturneMail($this->db, 'contrat');
+        $saturneMail = new SaturneMail($this->db);
 
         if (getDolGlobalInt('DOLIMEET_EMAIL_TEMPLATE_SET') == 0 && isModEnabled('digiquali') && version_compare(getDolGlobalString('DIGIQUALI_VERSION'), '1.11.0', '>=')) {
-            $position = 100;
-            $satisfactionSurveys = ['billing', 'trainee', 'sessiontrainer', 'opco'];
+            $position                        = 100;
+            $satisfactionSurveys             = ['billing', 'trainee', 'sessiontrainer', 'opco'];
+            $emailTemplateSatisfactionSurvey = [];
             foreach ($satisfactionSurveys as $satisfactionSurvey) {
+                $saturneMail->module        = 'contrat';
                 $saturneMail->entity        = 0;
                 $saturneMail->type_template = 'contract';
                 $saturneMail->lang          = 'fr_FR';
@@ -614,6 +617,7 @@ class modDoliMeet extends DolibarrModules
                 $saturneMail->content       = $langs->transnoentities('SatisfactionSurveyContent', dol_strtolower($langs->transnoentities(ucfirst($satisfactionSurvey))));
 
                 $emailTemplateSatisfactionSurvey[$satisfactionSurvey] = $saturneMail->create($user);
+
                 $position += 10;
             }
 
@@ -621,13 +625,14 @@ class modDoliMeet extends DolibarrModules
             dolibarr_set_const($this->db, 'DOLIMEET_EMAIL_TEMPLATE_SET', 1, 'integer', 0, '', $conf->entity);
         }
         if (getDolGlobalInt('DOLIMEET_EMAIL_TEMPLATE_SET') <= 1) {
+            $saturneMail->module        = 'contrat';
             $saturneMail->entity        = 0;
             $saturneMail->type_template = 'contract';
             $saturneMail->lang          = 'fr_FR';
             $saturneMail->datec         = $this->db->idate(dol_now());
             $saturneMail->label         = $langs->transnoentities('CompletionCertificateDocumentLabel');
             $saturneMail->position      = 100;
-            $saturneMail->enabled       = "isModEnabled('dolimeet')";
+            $saturneMail->enabled       = "isModEnabled('contrat')";
             $saturneMail->topic         = $langs->transnoentities('CompletionCertificateDocumentTopic');
             $saturneMail->joinfiles     = 0;
             $saturneMail->content       = $langs->transnoentities('CompletionCertificateDocumentContent');
@@ -636,6 +641,32 @@ class modDoliMeet extends DolibarrModules
 
             dolibarr_set_const($this->db, 'DOLIMEET_EMAIL_TEMPLATE_COMPLETION_CERTIFICATE', $emailTemplateID, 'chaine', 0, '', $conf->entity);
             dolibarr_set_const($this->db, 'DOLIMEET_EMAIL_TEMPLATE_SET', 2, 'integer', 0, '', $conf->entity);
+        }
+
+        if (getDolGlobalInt('DOLIMEET_EMAIL_TEMPLATE_SET') <= 2) {
+            $position                        = 200;
+            $satisfactionSurveys             = ['billing', 'trainee', 'sessiontrainer', 'opco'];
+
+            foreach ($satisfactionSurveys as $satisfactionSurvey) {
+                $saturneMail->module        = 'dolimeet';
+                $saturneMail->entity        = 0;
+                $saturneMail->type_template = 'survey@dolimeet';
+                $saturneMail->lang          = 'fr_FR';
+                $saturneMail->datec         = $this->db->idate(dol_now());
+                $saturneMail->label         = $langs->transnoentities('SatisfactionSurveyLabel' . ucfirst($satisfactionSurvey));
+                $saturneMail->position      = $position;
+                $saturneMail->enabled       = "isModEnabled('dolimeet')";
+                $saturneMail->topic         = $langs->transnoentities('SatisfactionSurveyTopic' . ucfirst($satisfactionSurvey));
+                $saturneMail->joinfiles     = 0;
+                $saturneMail->content       = $langs->transnoentities('SatisfactionSurveyContent' . ucfirst($satisfactionSurvey));
+
+                $emailTemplateID = $saturneMail->create($user);
+                dolibarr_set_const($this->db, 'DOLIMEET_EMAIL_TEMPLATE_SATISFACTION_SURVEY_' . dol_strtoupper($satisfactionSurvey), $emailTemplateID, 'integer', 0, '', $conf->entity);
+                $position += 10;
+            }
+            exit;
+
+            dolibarr_set_const($this->db, 'DOLIMEET_EMAIL_TEMPLATE_SET', 3, 'integer', 0, '', $conf->entity);
         }
 
         if (getDolGlobalInt('DOLIMEET_EMAIL_TEMPLATE_UPDATED') == 0) {

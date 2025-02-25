@@ -456,6 +456,25 @@ class InterfaceDoliMeetTriggers extends DolibarrTriggers
                     }
                 }
                 break;
+            case 'CONTRACT_CONTACT_SEND_MAIL_SATISFACTION_SURVEY':
+                $actioncomm->elementtype = 'contract';
+                $actioncomm->fk_element  = $object->fk_element;
+                $actioncomm->code        = 'AC_' . $action;
+
+                if ($object->element_type == 'socpeople') {
+                    # @TODO METTRE LE TIER
+                    $actioncomm->socpeopleassigned = [$object->id => $object->id];
+                    $actioncomm->fk_contact        = $object->id;
+                } else {
+                    $actioncomm->socpeopleassigned = [$object->socid => $object->socid];
+                    $actioncomm->fk_contact = $object->id;
+                }
+
+                $actioncomm->label        = 'MAIL SENT';
+                $actioncomm->note_private = $langs->transnoentities('Subject') . ' : ' . $object->actionmsg2 . '<br>' . $object->actionmsg;
+
+                $actioncomm->create($user);
+                break;
         }
 
         return 0;

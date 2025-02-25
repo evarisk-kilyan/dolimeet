@@ -171,3 +171,76 @@ function set_public_note(CommonObject $object, Project $project = null, Propal $
     $object->setValueFrom('note_public', $object->note_public);
 }
 
+function send_survey_mail($object, $contactId, $contactSource, $contactCode, $surveyId)
+{
+    global $db, $conf, $langs, $user;
+
+    require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
+    require_once __DIR__ . '/../../digiquali/class/survey.class.php';
+    require_once __DIR__ . '/../../saturne/class/saturnemail.class.php';
+    require_once DOL_DOCUMENT_ROOT . '/core/class/CMailFile.class.php';
+
+    $contact     = new Contact($db);
+    $saturneMail = new SaturneMail($db);
+
+    if ($contactSource == 'external') {
+        $contact->fetch($contactId);
+    } else {
+        $contact = new User($db);
+        $contact->fetch($contactId);
+    }
+    $contact->fk_element   = $object->id;
+    $contact->element_type = $contactSource == 'internal' ? 'user' : 'socpeople';
+
+    $survey = new Survey($db);
+    $survey->fetch($surveyId);
+    $surveyPublicUrl = dol_buildpath('/digiquali/public/public_answer.php', 2) . '?track_id=' . $survey->track_id . '&object_type=' . $survey->element . '&document_type=SurveyDocument&entity=' . $conf->entity;
+
+    require_once DOL_DOCUMENT_ROOT . '/core/class/CMailFile.class.php';
+
+    $from   = $conf->global->MAIN_MAIL_EMAIL_FROM;
+    $sendto = $contact->email;
+
+    // Make substitution in email content
+    $substitutionarray                              = getCommonSubstitutionArray($langs, 0, null, $object);
+    $substitutionarray['__OBJECT_ELEMENT__']        = dol_strtolower($langs->transnoentities(ucfirst($object->element)));
+    $substitutionarray['__SATURNE_SIGNATORY_URL__'] = '<a href="' . $surveyPublicUrl . '"> LIEN </a>';
+    $substitutionarray['__SATURN_SIGNATORY_URL__'] = '<a href=""'
+    complete_substitutions_array($substitutionarray, $langs, $object);
+
+    $result  = $saturneMail->fetch(getDolGlobalInt('DOLIMEET_EMAIL_TEMPLATE_SATISFACTION_SURVEY_' . dol_strtoupper($contactCode)));
+    $subject = $result > 0 ? $saturneMail->topic : $langs->transnoentities('EmailSignatureTopic');
+    $message = $result > 0 ? $saturneMail->content : $langs->transnoentities('EmailSignatureContent');
+
+    $subject = make_substitutions($subject, $substitutionarray);
+    $message = make_substitutions($message, $substitutionarray);
+
+    // Create form object
+    // Send mail (substitutionarray must be done just before this)
+    $mailfile = new CMailFile($subject, $sendto, $from, $message, [], [], [], '', '', 0, -1, '', '', '', '', 'mail');
+    if ($mailfile->error) {
+        setEventMessages($mailfile->error, $mailfile->errors, 'errors');
+    } elseif (!empty($conf->global->MAIN_MAIL_SMTPS_ID) || $conf->global->SATURNE_USE_ALL_EMAIL_MODE > 0) {
+        $result = $mailfile->sendfile();
+        if ($result) {
+            setEventMessages($langs->trans('SendEmailAt', $sendto), []);
+
+            $contact->actionmsg  = $message;
+            $contact->actionmsg2 = $subject;
+            $contact->call_trigger('CONTRACT_CONTACT_SEND_MAIL_SATISFACTION_SURVEY', $user);
+
+        } else {
+            $langs->load('other');
+            $errorMessage = '<div class="error">';
+            $errorMessage .= $langs->transnoentities('ErrorFailedToSendMail', dol_escape_htmltag($from), dol_escape_htmltag($sendto));
+            if ($mailfile->error) {
+                $errorMessage .= '<br>' . $mailfile->error;
+            }
+            $errorMessage .= '</div>';
+            setEventMessages($errorMessage, [], 'warnings');
+        }
+    } else {
+            $url = '<a href="' . dol_buildpath('/admin/mails.php', 1) . '" target="_blank">' . $langs->trans('ConfigEmail') . '</a>';
+            setEventMessages($langs->trans('ErrorSetupEmail') . '<br>' . $url, [], 'warnings');
+    }
+}

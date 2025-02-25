@@ -268,13 +268,32 @@ AttendanceAbsentAuditRate            = Taux d'absence aux audits
 #
 
 # Data - Donnée
-SatisfactionSurveyLabel              = DLM_Questionnaire_Satisfaction_%s
-SatisfactionSurveyTopic              = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
-SatisfactionSurveyContent            = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+SatisfactionSurveyLabel                 = DLM_Questionnaire_Satisfaction_%s
+SatisfactionSurveyTopic                 = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
+SatisfactionSurveyContent               = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+
+SatisfactionSurveyLabelOpco             = Questionnaire_Satisfaction_OPCO
+SatisfactionSurveyTopicOpco             = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
+SatisfactionSurveyContentOpco           = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+
+SatisfactionSurveyLabelBilling          = Questionnaire_Satisfaction_Commanditaire
+SatisfactionSurveyTopicBilling          = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
+SatisfactionSurveyContentBilling        = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+
+SatisfactionSurveyLabelSessiontrainer   = Questionnaire_Satisfaction_Formateur
+SatisfactionSurveyTopicSessiontrainer   = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
+SatisfactionSurveyContentSessiontrainer = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+
+SatisfactionSurveyLabelTrainee          = Questionnaire_Satisfaction_Stagiaire
+SatisfactionSurveyTopicTrainee          = [__[MAIN_INFO_SOCIETE_NOM]__] Remise des liens de questionnaire de satisfaction %s pour la convention de formation __REF__
+SatisfactionSurveyContentTrainee        = Bonjour,<br /><br />Nous vous envoyons ce mail afin de vous mettre au courant des questionnaires de satisfaction %s liées avec votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br />Ci-dessous, vous trouverez un aperçu des questionnaires, incluant les détails pertinents :<br /><br />__DOLIMEET_CONTRACT_SURVEY_INFOS__<br /><br />Nous vous prions de bien vouloir transmettre ces liens aux parties concernées.<br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
+
+
+
 CompletionCertificateDocumentLabel   = DLM_Certificat_Réalisation
 CompletionCertificateDocumentTopic   = [__[MAIN_INFO_SOCIETE_NOM]__] Remise du certificat de réalisation pour la convention de formation __REF__
 CompletionCertificateDocumentContent = Bonjour,<br /><br />Veuillez trouver en pièce jointe le certificat de réalisation lié à votre convention de formation "__REF__" - "__DOLIMEET_CONTRACT_LABEL__".<br><br />Nous restons à votre disposition pour toute information supplémentaire.<p>Bien cordialement,<br /><br />__USER_FULLNAME__<br />__USER_EMAIL__<br />__MYCOMPANY_NAME__<br />__MYCOMPANY_FULLADDRESS__<br />__MYCOMPANY_EMAIL__
-
+SendGlobalSatisfactionSurveyMail     = Envoyer un email de d'enquête de satisfaction a tous les participants
 
 
 #
